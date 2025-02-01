@@ -1,2 +1,2 @@
 # EasySanni
-Repositoryoflgl2020
+Repository of LGL2020

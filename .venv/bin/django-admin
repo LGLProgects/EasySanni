@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/home/king-dev/Bureau/Projet EasySanni/.venv/bin/python" "$0" "$@"
+'''exec' "/home/king-dev/Bureau/Projet EasySanni/.venv/bin/python3.12" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re

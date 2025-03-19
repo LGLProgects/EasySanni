@@ -14,10 +14,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
 from django.http import HttpResponse
+from django.urls import path, include
 from django.views.generic import RedirectView
 
+from django.conf import settings
+from django.conf.urls.static import static
 from EasySanni.settings import STATIC_URL
 
 # Vue de test de la page d'acceuil
@@ -30,7 +32,11 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/products/', include('products.urls')),
     path('api/orders/', include('orders.urls')),
+    path('api/cart/', include('cart.urls')),
     path('api/payments/', include('payments.urls')),
     path('api/admin_panel/', include('admin_panel.urls')),
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.ico', permanent=True)),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

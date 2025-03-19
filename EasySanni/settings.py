@@ -38,16 +38,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
      # Applications du projet
     'users',
     'products',
+    'cart',
     'orders',
     'payments',
     'admin_panel',
-    
+        
     # REST Framework
     'rest_framework',
     'rest_framework_simplejwt',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -157,7 +160,12 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'AUTH_HEADER_TYPES': ('Bearer',),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1), # Le token d'acces expire em 1 jour
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), # Le token de rafraichissement expire en 7 jours
+    'AUTH_HEADER_TYPES': ('Bearer',), # Type d'en-tete utiliser pour l'authentification
 }
+
+
+# Gestion de upload d'image
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

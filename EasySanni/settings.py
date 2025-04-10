@@ -9,10 +9,10 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
-import pymysql
+import pymysql # type: ignore
 pymysql.install_as_MySQLdb()
 import os
-
+import dj_database_url 
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -90,14 +90,7 @@ WSGI_APPLICATION = 'EasySanni.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'easy_sanni',
-        'USER': 'root',  # Ton utilisateur MySQL
-        'PASSWORD': 'eazy_sannilgl2020',  # Ton mot de passe MySQL
-        'HOST': 'mysql.railway.internal',
-        'PORT': '3306',
-    }
+    'default': dj_database_url.parse(os.getenv('MYSQL_URL')) # type: ignore
 }
 
 

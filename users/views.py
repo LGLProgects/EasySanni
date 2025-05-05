@@ -1,43 +1,59 @@
-from django.shortcuts import render
-
-# Create your views here.
-from rest_framework import generics, permissions
-from .models import CustomUser
-from .serializers import UserSerializer
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from cart.models import Cart, Product
+from .models import CustomUser
+from .serializers import (
+    CustomTokenObtainPairSerializer,
+    UserSerializer,
+    UserRegisterSerializer,
+    SellerRegisterSerializer
+)
 
-class UserProfileView(generics.RetrieveAPIView):
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            user = CustomUser.objects.get(username=request.data['username'])
+            response.data['user'] = UserSerializer(user).data
+        return response
+
+class UserRegisterView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
+    serializer_class = UserRegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+class SellerRegisterView(generics.CreateAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = SellerRegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         return self.request.user
 
-class LoginView(TokenObtainPairView):
-    """Fusionner le panier de session avec celui en base de données"""
+class UserListView(generics.ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
 
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
+    def get_queryset(self):
+        return CustomUser.objects.all()
 
-        if response.status_code == 200:
-            user = CustomUser.objects.get(email=request.data["email"])
+class UpgradeToSellerView(generics.UpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-            # Récuperer le panier en session
-            session_cart = request.session.get("cart", {})
+    def get_object(self):
+        return self.request.user
 
-            for product_id, item in session_cart.item():
-                product = Product.objects.get(id=product_id)
-
-                # Vérifier si le produit est dejà dans le panier en DB
-                cart_item, created = Cart.objects.get_or_create(user=user, product=product)
-                if not created:
-                    cart_item.quantity += item["quantity"]
-                    cart_item.save()
-
-            # Vider le panier session après fusion
-            request.session["cart"] = {}
-            request.session.modified = True
-
-        return response
+    def update(self, request, *args, **kwargs):
+        user = self.get_object()
+        if user.is_seller == "0":
+            user.is_seller = "1"
+            user.save()
+            return Response({"status": "Upgraded to seller"}, status=status.HTTP_200_OK)
+        return Response({"error": "Already a seller or admin"}, status=status.HTTP_400_BAD_REQUEST)

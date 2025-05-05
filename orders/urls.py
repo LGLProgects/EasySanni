@@ -1,6 +1,10 @@
-from django.urls import path
-from .views import test_view
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import OrderViewSet
+
+router = DefaultRouter()
+router.register(r'orders', OrderViewSet, basename='order')
 
 urlpatterns = [
-    path('test/', test_view, name='test_view'),
+    path('', include(router.urls)),
 ]

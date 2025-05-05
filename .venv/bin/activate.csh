@@ -9,7 +9,7 @@ alias deactivate 'test $?_OLD_VIRTUAL_PATH != 0 && setenv PATH "$_OLD_VIRTUAL_PA
 # Unset irrelevant variables.
 deactivate nondestructive
 
-setenv VIRTUAL_ENV '/home/king-dev/Bureau/Projet EasySanni/.venv'
+setenv VIRTUAL_ENV '/media/confidence-hy-uche/C89CF6BF9CF6A6DA/Telegram Desktop/EASY2/EeasySanni/EasySanni/.venv'
 
 set _OLD_VIRTUAL_PATH="$PATH"
 setenv PATH "$VIRTUAL_ENV/"bin":$PATH"

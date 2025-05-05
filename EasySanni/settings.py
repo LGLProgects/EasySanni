@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'orders',
     'payments',
     'admin_panel',
+    'categories',
+    'messagerie',
         
     # REST Framework
     'rest_framework',
@@ -95,7 +97,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'easy_sanni',
         'USER': 'Mohamed',  # Ton utilisateur MySQL
-        'PASSWORD': 'kingsix6',  # Ton mot de passe MySQL
+        'PASSWORD': 'Confidence00',  # Ton mot de passe MySQL
         'HOST': 'localhost',
         'PORT': '3306',
     }

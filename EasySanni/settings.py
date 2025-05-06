@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'admin_panel',
     'categories',
     'messagerie',
+    'deliveries',
         
     # REST Framework
     'rest_framework',
@@ -96,7 +97,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'easy_sanni',
-        'USER': 'Mohamed',  # Ton utilisateur MySQL
+        'USER': 'Confidence',  # Ton utilisateur MySQL
         'PASSWORD': 'Confidence00',  # Ton mot de passe MySQL
         'HOST': 'localhost',
         'PORT': '3306',

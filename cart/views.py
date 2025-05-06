@@ -1,99 +1,213 @@
-from django.shortcuts import render
-from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions
-from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Cart
-from products.models import Product
-from .serializers import CartSerializer
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from django.shortcuts import get_object_or_404
+from .models import Cart, CartItem, Review
+from .serializers import CartSerializer, CartItemSerializer, ReviewSerializer
 
-# Create your views here.
-#-------------------Cart en Base de Données-------------------------------------
+# -----------------------
+# Cart Views
+# -----------------------
 
-# Affichage du panier
-class CartListView(generics.ListAPIView):
-    """Voir le contenu du panier"""
+# Get current user's cart
+class CartListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = CartSerializer
 
-    def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user)
-        
-# Ajout au panier
+    def get(self, request):
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        serializer = CartSerializer(cart)
+        return Response(serializer.data)
+
+
+# Add a product to cart
 class AddToCartView(APIView):
-    """Ajouter un produit au panier"""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        product_id = request.data.get("product_id")
-        quantity = int(request.data.get("quantity", 1))
+        cart, _ = Cart.objects.get_or_create(user=request.user)
+        product_id = request.data.get('product_id')
+        quantity = int(request.data.get('quantity', 1))
 
-        product = Product.objects.get(id=product_id)
-        cart_item, created = Cart.objects.get_or_create(user=request.user, product=product)
+        if not product_id:
+            return Response({"error": "product_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        cart_item, created = CartItem.objects.get_or_create(
+            cart=cart,
+            product_id=product_id,
+            defaults={'quantity': quantity}
+        )
 
         if not created:
-            cart_item.quantite += quantity
+            cart_item.quantity += quantity
             cart_item.save()
-            
-        return Response({"message": "Produit ajouté au panier avec succès !"})
-    
-# Suppression d'un élément du panier
-class RemoveFromCartView(APIView):
-    """Supprimer un produit du panier"""
+
+        serializer = CartSerializer(cart)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# Update product quantity
+class UpdateCartItemView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def delete(self, request, product_id):
-        Cart.objects.filter(user=request.user, product_id=product_id).delete()
-        return Response({"message": "produit supprimer du panier"})
+    def put(self, request, id):
+        cart = get_object_or_404(Cart, user=request.user)
+        cart_item = get_object_or_404(CartItem, id=id, cart=cart)
+        quantity = request.data.get('quantity')
 
-# Supprimer tout les éléments du panier
+        if quantity is None or int(quantity) < 1:
+            return Response({"error": "Invalid quantity"}, status=status.HTTP_400_BAD_REQUEST)
+
+        cart_item.quantity = int(quantity)
+        cart_item.save()
+        serializer = CartSerializer(cart)
+        return Response(serializer.data)
+
+
+# Remove product from cart
+class RemoveFromCartView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, id):
+        cart = get_object_or_404(Cart, user=request.user)
+        cart_item = get_object_or_404(CartItem, id=id, cart=cart)
+        cart_item.delete()
+        serializer = CartSerializer(cart)
+        return Response(serializer.data)
+
+
+# Clear entire cart
 class ClearCartView(APIView):
-    """Vider completement le panier"""
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request):
-        Cart.objects.filter(user=request.user).delete()
-        return Response({"message": "Panier vider avec succès"})
+        cart = get_object_or_404(Cart, user=request.user)
+        cart.items.all().delete()
+        return Response({"message": "Cart cleared"}, status=status.HTTP_204_NO_CONTENT)
 
-    
-#-------------------Gestion des sessions pour les Non-Connectés------------------------------------
+# -----------------------
+# Review Views
+# -----------------------
+
+# Get reviews for a product
+class ProductReviewListView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, productId):
+        reviews = Review.objects.filter(product_id=productId)
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+
+
+# Add a review
+class AddReviewView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        data = request.data.copy()
+        data['user'] = request.user.id
+        serializer = ReviewSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Update a review
+class UpdateReviewView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, id):
+        review = get_object_or_404(Review, id=id, user=request.user)
+        serializer = ReviewSerializer(review, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class SessionCartView(APIView):
-    """Gestion des sessions pour les utilisateurs non connectés"""
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        """Voir le contenu du panier(Session)"""
         cart = request.session.get('cart', {})
         return Response(cart)
 
-    def post (self, request):
-        """Ajouter un produit au panier (Session)"""
-        product_id = str(request.data.get("product_id"))
-        quantity = int(request.data.get("quantity", 1))
+    def post(self, request):
+        product_id = str(request.data.get('product_id'))
+        quantity = int(request.data.get('quantity', 1))
 
-        product = get_object_or_404(Product, id=product_id)
+        if not product_id:
+            return Response({"error": "product_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Récuperer ou créer le panier en session
         cart = request.session.get('cart', {})
 
-        # Ajouter/Modifié le produit dans le panier
         if product_id in cart:
-            cart[product_id]["quantity"] += quantity
+            cart[product_id] += quantity
         else:
-            cart[product_id] = {
-                "name": product.name,
-                "price": str(product.price),
-                "quantite": quantity
-            }
+            cart[product_id] = quantity
 
-            # Sauvegarder la session
-            request.session["cart"] = cart
+        request.session['cart'] = cart
+        request.session.modified = True
+        return Response(cart, status=status.HTTP_201_CREATED)
+
+    def put(self, request):
+        product_id = str(request.data.get('product_id'))
+        quantity = int(request.data.get('quantity', 1))
+
+        cart = request.session.get('cart', {})
+        if product_id in cart:
+            cart[product_id] = quantity
+            request.session['cart'] = cart
             request.session.modified = True
+            return Response(cart)
+        return Response({"error": "Product not in cart"}, status=status.HTTP_404_NOT_FOUND)
 
-            return Response({"message": "Produit ajouté au panier (Mode Session) !"})
-        
     def delete(self, request):
-        """Vider complètememt le panier"""
-        request.session["cart"] = {}
-        request.session.modified =True
-        return Response({"message": "Panier vidé avec succès (Mode Session)"})
+        product_id = str(request.data.get('product_id'))
+
+        cart = request.session.get('cart', {})
+        if product_id in cart:
+            del cart[product_id]
+            request.session['cart'] = cart
+            request.session.modified = True
+            return Response(cart)
+        return Response({"error": "Product not in cart"}, status=status.HTTP_404_NOT_FOUND)
+class FusionnerPanierView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        session_cart = request.session.get('cart', {})
+
+        if not session_cart:
+            return Response({"message": "Le panier de session est vide."}, status=status.HTTP_204_NO_CONTENT)
+
+        cart, created = Cart.objects.get_or_create(user=request.user)
+
+        for product_id_str, quantity in session_cart.items():
+            product_id = int(product_id_str)
+            cart_item, created = CartItem.objects.get_or_create(
+                cart=cart, product_id=product_id,
+                defaults={'quantity': quantity}
+            )
+            if not created:
+                cart_item.quantity += quantity
+                cart_item.save()
+
+        # Nettoyer le panier session après fusion
+        request.session['cart'] = {}
+        request.session.modified = True
+
+        serializer = CartSerializer(cart)
+        return Response({
+            "message": "Panier fusionné avec succès.",
+            "panier_utilisateur": serializer.data
+        }, status=status.HTTP_200_OK)
+
+# Delete a review
+class DeleteReviewView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, id):
+        review = get_object_or_404(Review, id=id, user=request.user)
+        review.delete()
+        return Response({"message": "Review deleted"}, status=status.HTTP_204_NO_CONTENT)

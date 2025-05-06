@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/cart/', include('cart.urls')),
     path('api/payments/', include('payments.urls')),
     path('api/categories/', include('categories.urls')),
+    path('api/deliveries/', include('deliveries.urls')),
     path('api/messagerie/', include('messagerie.urls')),
     path('api/admin_panel/', include('admin_panel.urls')),
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.ico', permanent=True)),

@@ -1,28 +1,34 @@
 from django.db import models
-from users.models import CustomUser
-from products.models import Product
+from django.conf import settings
 
-# Create your models here.
+
 class Cart(models.Model):
-    """Panier d'achat lié à un utilisateur"""
-
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="cart")
-    produit = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantite = models.PositiveIntegerField(default=1)
-    added_at = models.DateTimeField(auto_now_add=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.quantite} x {self.produit.name} dans le panier de {self.user.username}"
-    
+        return f"Cart of {self.user.username}"
+
 class CartItem(models.Model):
-    """Produit dans le panier"""
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
+    product_id = models.CharField(max_length=100, default="default-product")
+  # Référence au produit
     quantity = models.PositiveIntegerField(default=1)
-    added_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('cart', 'product') # pour éviter les doublons de produits
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.quantity} x {self.product.name}"
+        return f"{self.quantity} x Product {self.product_id} in cart"
+
+class Review(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    product_id = models.CharField(max_length=100, default="default-product")
+  # Référence au produit
+    rating = models.PositiveIntegerField()  # Note (ex. 1 à 5)
+    comment = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Review by {self.user.username} for Product {self.product_id}"

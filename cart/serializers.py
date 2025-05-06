@@ -1,11 +1,19 @@
-from rest_framework import serializers 
-from .models import Cart   
+from rest_framework import serializers
+from .models import Cart, CartItem, Review
+
+class CartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = ['id', 'product_id', 'quantity', 'created_at', 'updated_at']
 
 class CartSerializer(serializers.ModelSerializer):
-    """
-        Convertit le model Product en JSON
-        Serializeur pour les produits avec gestion des images
-    """
+    items = CartItemSerializer(many=True, read_only=True)
+
     class Meta:
         model = Cart
-        fields = ['user', 'produit', 'quantite', 'added_at']
+        fields = ['id', 'user', 'items', 'created_at', 'updated_at']
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['id', 'user', 'product_id', 'rating', 'comment', 'created_at', 'updated_at']

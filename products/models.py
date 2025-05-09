@@ -37,3 +37,15 @@ class ProductAttribute(models.Model):
 
     def __str__(self):
         return f"{self.name}: {self.value}"
+    # products/models.py
+
+class Notification(models.Model):
+    """Modèle pour les notifications d'un utilisateur"""
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="notifications")
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)  # Statut pour savoir si la notification a été lue
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

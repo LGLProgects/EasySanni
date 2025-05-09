@@ -51,11 +51,15 @@ INSTALLED_APPS = [
     'categories',
     'messagerie',
     'deliveries',
+    'vendors',
+    'notifications',
+    'channels',
         
     # REST Framework
     'rest_framework',
     'rest_framework_simplejwt',
     'django_filters',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -175,3 +179,11 @@ SIMPLE_JWT = {
 # Gestion de upload d'image
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        }
+    }
+}
